@@ -17,6 +17,11 @@ public class CupboardApplicationGUI {
         device.setFullScreenWindow(frame);
         frame.setTitle("Personal digital Cupboard");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        String data[][] = getCupboardData();
+        String columns[] = getTableColumns();
+        JTable table = new JTable();
+        DefaultTableModel model = new DefaultTableModel(data, columns);
+        table.setModel(model);
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         JPanel buttonPanel = new JPanel();
@@ -31,18 +36,22 @@ public class CupboardApplicationGUI {
             addGarmentInputField();
         });
         JButton deleteButton = new JButton("Delete Item");
+        deleteButton.addActionListener(e -> {
+            int index = table.getSelectedRow();
+            String id = (String) table.getModel().getValueAt(index, 0);
+            deleteGarment(id);
+        });
         buttonPanel.add(retrieveButton);
         buttonPanel.add(addButton);
         buttonPanel.add(deleteButton);
-        String data[][] = getCupboardData();
-        String columns[] = getTableColumns();
-        JTable table = new JTable();
-        DefaultTableModel model = new DefaultTableModel(data, columns);
-        table.setModel(model);
         panel.add(buttonPanel, BorderLayout.NORTH);
         panel.add(table, BorderLayout.CENTER);
         frame.add(panel);
         frame.setVisible(true);
+    }
+
+    private void deleteGarment(String id) {
+        
     }
 
     private void addGarmentInputField() {
@@ -103,7 +112,15 @@ public class CupboardApplicationGUI {
         jf.setVisible (true);
     }
 
-    private void addGarment(String body) throws IOException {
+    private HttpURLConnection getHttpGETUrlConnection() throws IOException {
+        String url = "http://localhost:8080/garment/";
+        URL urlObj = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+        connection.setRequestMethod("GET");
+        return connection;
+    }
+
+    private HttpURLConnection getHttpPOSTURLConnection() throws IOException {
         String url = "http://localhost:8080/garment/";
         URL urlObj = new URL(url);
         HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
@@ -111,6 +128,59 @@ public class CupboardApplicationGUI {
         connection.setRequestProperty("Content-Type", "application/json; utf-8");
         connection.setRequestProperty("Accept", "application/json");
         connection.setDoOutput(true);
+        return connection;
+    }
+
+    private StringBuffer getInputStream(HttpURLConnection connection) throws IOException {
+        BufferedReader inputReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+        while ((inputLine = inputReader.readLine()) != null) {
+            response.append(inputLine);
+        }
+        inputReader.close();
+        return response;
+    }
+
+    private String[][] extractData(String[] table) {
+        int l = 0;
+        String[][] data = new String[table.length][4];
+        for (String s : table) {
+            String[] tab = s.split(",\"_links\":");
+            for (int j = 0; j < tab.length; j++) {
+                if (j % 2 != 0) {
+                    tab[j] = null;
+                }
+                if (j + 1 == tab.length) {
+                    tab[j] = null;
+                }
+            }
+            for (int j = 0; (j + 1) < tab.length; j++) {
+                if (tab[j] == null && j < tab.length) {
+                    tab[j] = tab[j + 1];
+                }
+                if (tab[j] == null) {
+                    tab[j] = tab[j - 1];
+                }
+                String[] t = tab[j].split(",");
+                for (int k = 0; k < t.length; k++) {
+                    t[k] = t[k].replace("\"type\":", "");
+                    t[k] = t[k].replace("\"size\":", "");
+                    t[k] = t[k].replace("\"colour\":", "");
+                    t[k] = t[k].replace("\"", "");
+                    t[k] = t[k].replace("\"", "");
+                    data[l][k] = t[k];
+                    if (k == 3) {
+                        l++;
+                    }
+                }
+            }
+        }
+        return data;
+    }
+
+    private void addGarment(String body) throws IOException {
+        HttpURLConnection connection = getHttpPOSTURLConnection();
         try(OutputStream os = connection.getOutputStream()) {
             byte[] input = body.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
@@ -126,70 +196,29 @@ public class CupboardApplicationGUI {
         }
     }
 
+    private String[][] getCupboardData() throws IOException, InterruptedException {
+        HttpURLConnection connection = getHttpGETUrlConnection();
+        int responseCode = connection.getResponseCode();
+        System.out.println("Response Code : " + responseCode);
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            StringBuffer response = getInputStream(connection);
+            String tableContent = response.toString();
+            String[] table = tableContent.split("\"id\":");
+            String[][] data = extractData(table);
+            return data;
+        }
+        return null;
+    }
+
     private String[] getTableColumns() {
         String[] columns = {"ID", "Type", "Size", "Colour"};
         return columns;
     }
 
-    private String[][] getTableData() {
+    /*private String[][] getTableData() {
         String[][] data = {{"tshirt1", "T-Shirt", "L", "Green"}, {"socks1", "Socks", "44-46", "Black"}};
         return data;
-    }
-
-    private String[][] getCupboardData() throws IOException, InterruptedException {
-        String url = "http://localhost:8080/garment/";
-        URL urlObj = new URL(url);
-        HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
-        connection.setRequestMethod("GET");
-        int responseCode = connection.getResponseCode();
-        System.out.println("Response Code : " + responseCode);
-        if (responseCode == HttpURLConnection.HTTP_OK) {
-           BufferedReader inputReader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String inputLine;
-            StringBuffer response = new StringBuffer();
-            while ((inputLine = inputReader.readLine()) != null) {
-                response.append(inputLine);
-            }
-            inputReader.close();
-            String tableContent = response.toString();
-            String[] table = tableContent.split("\"id\":");
-            int l = 0;
-            String[][] data = new String[table.length][4];
-            for (String s : table) {
-                String[] tab = s.split(",\"_links\":");
-                for (int j = 0; j < tab.length; j++) {
-                    if (j % 2 != 0) {
-                        tab[j] = null;
-                    }
-                    if (j + 1 == tab.length) {
-                        tab[j] = null;
-                    }
-                }
-                for (int j = 0; (j + 1) < tab.length; j++) {
-                    if (tab[j] == null && j < tab.length) {
-                        tab[j] = tab[j + 1];
-                    }
-                    if (tab[j] == null) {
-                        tab[j] = tab[j - 1];
-                    }
-                    String[] t = tab[j].split(",");
-                    for (int k = 0; k < t.length; k++) {
-                        t[k] = t[k].replace("\"type\":", "");
-                        t[k] = t[k].replace("\"size\":", "");
-                        t[k] = t[k].replace("\"colour\":", "");
-                        t[k] = t[k].replace("\"", "");
-                        t[k] = t[k].replace("\"", "");
-                        data[l][k] = t[k];
-                        if (k == 3) {
-                            l++;
-                        }
-                    }
-                }
-            }
-            return data;
-        }
-        return null;
-    }
+    }*/
 
     public static void main(String[] args) throws IOException, InterruptedException {
         new CupboardApplicationGUI();
