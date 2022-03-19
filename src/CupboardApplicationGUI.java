@@ -17,7 +17,7 @@ public class CupboardApplicationGUI {
         device.setFullScreenWindow(frame);
         frame.setTitle("Personal digital Cupboard");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        String data[][] = getCupboardData();
+        String data[][] = getCupboard();
         String columns[] = getTableColumns();
         JTable table = new JTable();
         DefaultTableModel model = new DefaultTableModel(data, columns);
@@ -28,7 +28,7 @@ public class CupboardApplicationGUI {
         buttonPanel.setLayout(new FlowLayout());
         JButton retrieveButton = new JButton("Get Cupboard");
         retrieveButton.addActionListener(e -> {
-            try {getCupboardData();}
+            try {getCupboard();}
             catch (IOException | InterruptedException ex) {ex.printStackTrace();}
         });
         JButton addButton = new JButton("Add Item");
@@ -196,7 +196,7 @@ public class CupboardApplicationGUI {
         }
     }
 
-    private String[][] getCupboardData() throws IOException, InterruptedException {
+    private String[][] getCupboard() throws IOException, InterruptedException {
         HttpURLConnection connection = getHttpGETUrlConnection();
         int responseCode = connection.getResponseCode();
         System.out.println("Response Code : " + responseCode);
