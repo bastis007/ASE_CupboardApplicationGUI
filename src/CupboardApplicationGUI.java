@@ -90,8 +90,6 @@ public class CupboardApplicationGUI {
     }
 
     private void updateGarment(String body, String id) throws IOException {
-        /*deleteGarment(id);
-        addGarment(body);*/
         String url = "http://localhost:8080/garment/" + id + "/";
         String requestMethod = "PUT";
         HttpURLConnection connection = getHttpPOSTURLConnection(url, requestMethod);
@@ -176,7 +174,7 @@ public class CupboardApplicationGUI {
         return new String[]{"ID", "Type", "Size", "Colour"};
     }
 
-    /*public String[][] getCupboard() throws IOException, InterruptedException {
+    public String[] getCupboard() throws IOException {
         HttpURLConnection connection = getHttpGETUrlConnection();
         int responseCode = connection.getResponseCode();
         System.out.println("Response Code : " + responseCode);
@@ -184,24 +182,7 @@ public class CupboardApplicationGUI {
             StringBuffer response = getInputStream(connection);
             String tableContent = response.toString();
             String[] table = tableContent.split("\"id\":");
-            String[][] data = extractData(table);
-            httpResponse(connection);
-            return data;
-        }
-        httpResponse(connection);
-        return null;
-    }*/
-
-    public String[] getCupboard2() throws IOException {
-        HttpURLConnection connection = getHttpGETUrlConnection();
-        int responseCode = connection.getResponseCode();
-        System.out.println("Response Code : " + responseCode);
-        if (responseCode == HttpURLConnection.HTTP_OK) {
-            StringBuffer response = getInputStream(connection);
-            String tableContent = response.toString();
-            String[] table = tableContent.split("\"id\":");
-            //String[][] data = extractData(table);
-            table = extractData2(table);
+            table = extractData(table);
             httpResponse(connection);
             return table;
         }
@@ -255,41 +236,7 @@ public class CupboardApplicationGUI {
         }
     }
 
-    /*private String[][] extractData(String[] table) {
-        int l = 0;
-        String[][] data = new String[table.length][4];
-        for (int i = 0; i < table.length; i++) {
-            String[] tab = table[i].split(",\"_links\":");
-            for (int j = 0; j < tab.length; j++) {
-                if (j % 2 != 0) {
-                    tab[j] = null;
-                }
-                if (j + 1 == tab.length) {
-                    tab[j] = null;
-                }
-            }
-            for (int j = 0; (j + 1) < tab.length; j++) {
-                if (tab[j] == null) {
-                    tab[j] = tab[j - 1];
-                }
-                String[] t = tab[j].split(",");
-                for (int k = 0; k < t.length; k++) {
-                    t[k] = t[k].replace("\"type\":", "");
-                    t[k] = t[k].replace("\"size\":", "");
-                    t[k] = t[k].replace("\"colour\":", "");
-                    t[k] = t[k].replace("\"", "");
-                    t[k] = t[k].replace("\"", "");
-                    data[l][k] = t[k];
-                    if (k == 3) {
-                        l++;
-                    }
-                }
-            }
-        }
-        return data;
-    }*/
-
-    private String[] extractData2(String[] table) {
+    private String[] extractData(String[] table) {
         String[] data = new String[table.length*4];
         int l = 0;
         for (int i = 0; i < table.length; i++) {
@@ -323,14 +270,6 @@ public class CupboardApplicationGUI {
 
     private JTable createJTable(){
         String[] columns = getTableColumns();
-        /*String[][] data = getCupboard();
-        DefaultTableModel model = new DefaultTableModel(data, columns);
-        JTable table = new JTable(model);
-        DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
-        tableModel.fireTableDataChanged();
-        int count = model.getRowCount();
-        model.removeRow(count-1);
-        return table;*/
         if (table == null) {
             table = new JTable() {
                 public boolean isCellEditable(int nRow, int nCol) {
@@ -346,7 +285,7 @@ public class CupboardApplicationGUI {
 
     public void setUpTableData() throws IOException, InterruptedException {
         DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
-        String[] data = getCupboard2();
+        String[] data = getCupboard();
         for(int i = 0; i < data.length; i += 4){
             tableModel.addRow(new Object[]{data[i + 0], data[i + 1], data[i + 2], data[i + 3]});
         }
@@ -414,9 +353,7 @@ public class CupboardApplicationGUI {
 
     private JButton createRetrieveButton() {
         JButton retrieveButton = new JButton("Get Cupboard");
-        retrieveButton.addActionListener(e -> {
-            updateTable(table);
-        });
+        retrieveButton.addActionListener(e -> updateTable(table));
         return retrieveButton;
     }
 
