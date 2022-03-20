@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 public class CupboardApplicationGUI {
 
     JFrame frame;
+    JTable table;
 
     public CupboardApplicationGUI() throws IOException, InterruptedException {
         frame = new JFrame();
@@ -17,54 +18,11 @@ public class CupboardApplicationGUI {
         device.setFullScreenWindow(frame);
         frame.setTitle("Personal digital Cupboard");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        String[][] data = getCupboard();
-        String[] columns = getTableColumns();
-        JTable table = new JTable();
-        DefaultTableModel model = new DefaultTableModel(data, columns);
-        table.setModel(model);
+        table = createJTable();
+        setUpTableData();
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout());
-        JButton retrieveButton = new JButton("Get Cupboard");
-        retrieveButton.addActionListener(e -> {
-            try {getCupboard();}
-            catch (IOException | InterruptedException ex) {ex.printStackTrace();}
-        });
-        JButton addButton = new JButton("Add Item");
-        addButton.addActionListener(e -> addGarmentInputField());
-        JButton deleteButton = new JButton("Delete Item");
-        deleteButton.addActionListener(e -> {
-            int index = table.getSelectedRow();
-            if(index == -1){
-                JOptionPane.showMessageDialog(null,"Please select an entry", "Digital Cupboard - Error", JOptionPane.ERROR_MESSAGE);
-            }
-            else {
-                String id = (String) table.getModel().getValueAt(index, 0);
-                System.out.println(id);
-                try {deleteGarment(id);}
-                catch (IOException ex) {ex.printStackTrace();}
-            }
-        });
-        JButton updateButton = new JButton("Update Item");
-        updateButton.addActionListener(e -> {
-            int index = table.getSelectedRow();
-            if(index == -1){
-                JOptionPane.showMessageDialog(null,"Please select an entry", "Digital Cupboard - Error", JOptionPane.ERROR_MESSAGE);
-            }
-            else {
-                String id = (String) table.getModel().getValueAt(index, 0);
-                String type = (String) table.getModel().getValueAt(index, 1);
-                String size = (String) table.getModel().getValueAt(index, 2);
-                String colour = (String) table.getModel().getValueAt(index, 3);
-                System.out.println(id);
-                updateGarmentInputField(id, type, size, colour);
-            }
-        });
-        buttonPanel.add(retrieveButton);
-        buttonPanel.add(addButton);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(updateButton);
+        JPanel buttonPanel = createJButtons(table);
         panel.add(buttonPanel, BorderLayout.NORTH);
         panel.add(table, BorderLayout.CENTER);
         frame.add(panel);
@@ -99,7 +57,6 @@ public class CupboardApplicationGUI {
         JTextField fieldSize = new JTextField (10);
         JLabel labelColour = new JLabel ("Enter Colour");
         JTextField fieldColour = new JTextField (10);
-        JButton jb = new JButton ("Submit");
         panel.add(labelId);
         panel.add(fieldId);
         panel.add(labelType);
@@ -108,6 +65,7 @@ public class CupboardApplicationGUI {
         panel.add(fieldSize);
         panel.add(labelColour);
         panel.add(fieldColour);
+        JButton jb = new JButton ("Submit");
         jf.add(panel, BorderLayout.CENTER);
         jf.add (jb, BorderLayout.SOUTH);
         jf.setVisible (true);
@@ -212,11 +170,11 @@ public class CupboardApplicationGUI {
         httpResponse(connection);
     }
 
-    private String[] getTableColumns() {
+    public String[] getTableColumns() {
         return new String[]{"ID", "Type", "Size", "Colour"};
     }
 
-    private String[][] getCupboard() throws IOException, InterruptedException {
+    /*public String[][] getCupboard() throws IOException, InterruptedException {
         HttpURLConnection connection = getHttpGETUrlConnection();
         int responseCode = connection.getResponseCode();
         System.out.println("Response Code : " + responseCode);
@@ -227,6 +185,23 @@ public class CupboardApplicationGUI {
             String[][] data = extractData(table);
             httpResponse(connection);
             return data;
+        }
+        httpResponse(connection);
+        return null;
+    }*/
+
+    public String[] getCupboard2() throws IOException {
+        HttpURLConnection connection = getHttpGETUrlConnection();
+        int responseCode = connection.getResponseCode();
+        System.out.println("Response Code : " + responseCode);
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            StringBuffer response = getInputStream(connection);
+            String tableContent = response.toString();
+            String[] table = tableContent.split("\"id\":");
+            //String[][] data = extractData(table);
+            table = extractData2(table);
+            httpResponse(connection);
+            return table;
         }
         httpResponse(connection);
         return null;
@@ -278,11 +253,11 @@ public class CupboardApplicationGUI {
         }
     }
 
-    private String[][] extractData(String[] table) {
+    /*private String[][] extractData(String[] table) {
         int l = 0;
         String[][] data = new String[table.length][4];
-        for (String s : table) {
-            String[] tab = s.split(",\"_links\":");
+        for (int i = 0; i < table.length; i++) {
+            String[] tab = table[i].split(",\"_links\":");
             for (int j = 0; j < tab.length; j++) {
                 if (j % 2 != 0) {
                     tab[j] = null;
@@ -292,9 +267,6 @@ public class CupboardApplicationGUI {
                 }
             }
             for (int j = 0; (j + 1) < tab.length; j++) {
-                if (tab[j] == null && j < tab.length) {
-                    tab[j] = tab[j + 1];
-                }
                 if (tab[j] == null) {
                     tab[j] = tab[j - 1];
                 }
@@ -313,12 +285,143 @@ public class CupboardApplicationGUI {
             }
         }
         return data;
+    }*/
+
+    private String[] extractData2(String[] table) {
+        String[] data = new String[table.length*4];
+        int l = 0;
+        for (int i = 0; i < table.length; i++) {
+            String[] tab = table[i].split(",\"_links\":");
+            for (int j = 0; j < tab.length; j++) {
+                if (j % 2 != 0) {
+                    tab[j] = null;
+                }
+                if (j + 1 == tab.length) {
+                    tab[j] = null;
+                }
+            }
+            for (int j = 0; (j + 1) < tab.length; j++) {
+                if (tab[j] == null) {
+                    tab[j] = tab[j - 1];
+                }
+                String[] t = tab[j].split(",");
+                for (int k = 0; k < t.length; k++) {
+                    t[k] = t[k].replace("\"type\":", "");
+                    t[k] = t[k].replace("\"size\":", "");
+                    t[k] = t[k].replace("\"colour\":", "");
+                    t[k] = t[k].replace("\"", "");
+                    t[k] = t[k].replace("\"", "");
+                    data[k + l] = t[k];
+                }
+                l += 4;
+            }
+        }
+        return data;
     }
 
-    /*private String[][] getTableData() {
-        String[][] data = {{"tshirt1", "T-Shirt", "L", "Green"}, {"socks1", "Socks", "44-46", "Black"}};
-        return data;
-    }*/
+    private JTable createJTable(){
+        String[] columns = getTableColumns();
+        /*String[][] data = getCupboard();
+        DefaultTableModel model = new DefaultTableModel(data, columns);
+        JTable table = new JTable(model);
+        DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
+        tableModel.fireTableDataChanged();
+        int count = model.getRowCount();
+        model.removeRow(count-1);
+        return table;*/
+        if (table == null) {
+            table = new JTable() {
+                public boolean isCellEditable(int nRow, int nCol) {
+                    return false;
+                }
+            };
+        }
+        DefaultTableModel contactTableModel = (DefaultTableModel) table.getModel();
+        contactTableModel.setColumnIdentifiers(columns);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        return table;
+    }
+
+    public void setUpTableData() throws IOException, InterruptedException {
+        DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
+        String[] data = getCupboard2();
+        for(int i = 0; i < data.length; i += 4){
+            tableModel.addRow(new Object[]{data[i + 0], data[i + 1], data[i + 2], data[i + 3]});
+        }
+        table.setModel(tableModel);
+        int count = tableModel.getRowCount();
+        tableModel.removeRow(count-1);
+    }
+
+    private JPanel createJButtons(JTable table) {
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout());
+        JButton retrieveButton = createRetrieveButton();
+        JButton addButton = createAddButton();
+        JButton deleteButton = createDeleteButton(table);
+        JButton updateButton = createUpdateButton(table);
+        buttonPanel.add(retrieveButton);
+        buttonPanel.add(addButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(updateButton);
+        return buttonPanel;
+    }
+
+    private JButton createUpdateButton(JTable table) {
+        JButton updateButton = new JButton("Update Item");
+        updateButton.addActionListener(e -> {
+            int index = table.getSelectedRow();
+            if (index == -1) {
+                JOptionPane.showMessageDialog(null, "Please select an entry", "Digital Cupboard - Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                String id = (String) table.getModel().getValueAt(index, 0);
+                String type = (String) table.getModel().getValueAt(index, 1);
+                String size = (String) table.getModel().getValueAt(index, 2);
+                String colour = (String) table.getModel().getValueAt(index, 3);
+                updateGarmentInputField(id, type, size, colour);
+            }
+        });
+        return updateButton;
+    }
+
+    private JButton createDeleteButton(JTable table) {
+        JButton deleteButton = new JButton("Delete Item");
+        deleteButton.addActionListener(e -> {
+            int index = table.getSelectedRow();
+            if (index == -1) {
+                JOptionPane.showMessageDialog(null, "Please select an entry", "Digital Cupboard - Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                String id = (String) table.getModel().getValueAt(index, 0);
+                try {
+                    deleteGarment(id);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        return deleteButton;
+    }
+
+    private JButton createAddButton() {
+        JButton addButton = new JButton("Add Item");
+        addButton.addActionListener(e -> addGarmentInputField());
+        return addButton;
+    }
+
+    private JButton createRetrieveButton() {
+        JButton retrieveButton = new JButton("Get Cupboard");
+        retrieveButton.addActionListener(e -> {
+            DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
+            tableModel.setRowCount(0);
+            tableModel.fireTableDataChanged();
+            try {
+                setUpTableData();
+            } catch (IOException | InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        });
+        return retrieveButton;
+    }
 
     public static void main(String[] args) throws IOException, InterruptedException {
         new CupboardApplicationGUI();
