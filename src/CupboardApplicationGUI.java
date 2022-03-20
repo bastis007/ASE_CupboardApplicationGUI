@@ -85,6 +85,7 @@ public class CupboardApplicationGUI {
                 String body = "{\"id\":\"" + id + "\", \"type\":\"" + type + "\", \"size\":\"" + newSize[0] + "\", \"colour\":\"" + newColour[0] + "\"}";
                 updateGarment(body, id);
             } catch (IOException ex) {ex.printStackTrace();}
+            updateTable(table);
         });
     }
 
@@ -145,6 +146,7 @@ public class CupboardApplicationGUI {
                     ex.printStackTrace();
                 }
             }
+            updateTable(table);
         });
         panel.add(labelId);
         panel.add(fieldId);
@@ -380,6 +382,7 @@ public class CupboardApplicationGUI {
                 String colour = (String) table.getModel().getValueAt(index, 3);
                 updateGarmentInputField(id, type, size, colour);
             }
+            updateTable(table);
         });
         return updateButton;
     }
@@ -398,6 +401,7 @@ public class CupboardApplicationGUI {
                     ex.printStackTrace();
                 }
             }
+            updateTable(table);
         });
         return deleteButton;
     }
@@ -411,16 +415,20 @@ public class CupboardApplicationGUI {
     private JButton createRetrieveButton() {
         JButton retrieveButton = new JButton("Get Cupboard");
         retrieveButton.addActionListener(e -> {
-            DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
-            tableModel.setRowCount(0);
-            tableModel.fireTableDataChanged();
-            try {
-                setUpTableData();
-            } catch (IOException | InterruptedException ex) {
-                ex.printStackTrace();
-            }
+            updateTable(table);
         });
         return retrieveButton;
+    }
+
+    private void updateTable(JTable table) {
+        DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
+        tableModel.setRowCount(0);
+        tableModel.fireTableDataChanged();
+        try {
+            setUpTableData();
+        } catch (IOException | InterruptedException ex) {
+            ex.printStackTrace();
+        }
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
