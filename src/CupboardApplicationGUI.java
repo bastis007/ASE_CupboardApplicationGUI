@@ -70,19 +70,20 @@ public class CupboardApplicationGUI {
         jf.add (jb, BorderLayout.SOUTH);
         jf.setVisible (true);
         jb.addActionListener (e -> {
-            String[] newSize = {fieldSize.getText()};
-            String[] newColour = {fieldColour.getText()};
-            if(newSize[0].isEmpty() && newColour[0].isEmpty()){
+            String newSize = fieldSize.getText();
+            String newColour = fieldColour.getText();
+            if(newSize.isEmpty() && newColour.isEmpty()){
                 JOptionPane.showMessageDialog(null,"Everything seems to be up to date", "Update Warning", JOptionPane.WARNING_MESSAGE);
             }
-            else if(newColour[0].isEmpty()){
-                newColour[0] = colour;
+            else if(newColour.isEmpty()){
+                newColour = colour;
             }
-            else if(newSize[0].isEmpty()){
-                newSize[0] = size;
+            else if(newSize.isEmpty()){
+                newSize = size;
             }
             try {
-                String body = "{\"id\":\"" + id + "\", \"type\":\"" + type + "\", \"size\":\"" + newSize[0] + "\", \"colour\":\"" + newColour[0] + "\"}";
+                String body = "{\"id\":\"" + id + "\", \"type\":\"" + type + "\", \"size\":\"" + newSize + "\", \"colour\":\"" + newColour + "\"}";
+                System.out.println(body);
                 updateGarment(body, id);
             } catch (IOException ex) {ex.printStackTrace();}
             updateTable(table);
@@ -226,12 +227,12 @@ public class CupboardApplicationGUI {
             //Do nothing, everything worked fine, but we don't need to tell the user
         }
         else if(responseCode == 201){
-            JOptionPane.showMessageDialog(null,"Successfully added new Garment");
+            JOptionPane.showMessageDialog(null,"Successfully added/updated new Garment");
         }
-        if(responseCode == 204){
+        else if(responseCode == 204){
             JOptionPane.showMessageDialog(null,"Successfully deleted Garment");
         }
-        if(responseCode > 204){
+        else{
             JOptionPane.showMessageDialog(null,"Internal error. Please try again. If this error continues please contact the administrator", "Digital Cupboard - Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -297,14 +298,14 @@ public class CupboardApplicationGUI {
     private JPanel createJButtons(JTable table) {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
-        JButton retrieveButton = createRetrieveButton();
+        //JButton retrieveButton = createRetrieveButton();
         JButton addButton = createAddButton();
-        JButton deleteButton = createDeleteButton(table);
         JButton updateButton = createUpdateButton(table);
-        buttonPanel.add(retrieveButton);
+        JButton deleteButton = createDeleteButton(table);
+        //buttonPanel.add(retrieveButton);
         buttonPanel.add(addButton);
-        buttonPanel.add(deleteButton);
         buttonPanel.add(updateButton);
+        buttonPanel.add(deleteButton);
         return buttonPanel;
     }
 
@@ -352,7 +353,7 @@ public class CupboardApplicationGUI {
     }
 
     private JButton createRetrieveButton() {
-        JButton retrieveButton = new JButton("Get Cupboard");
+        JButton retrieveButton = new JButton("Update Display");
         retrieveButton.addActionListener(e -> updateTable(table));
         return retrieveButton;
     }
