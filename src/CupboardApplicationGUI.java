@@ -13,9 +13,10 @@ public class CupboardApplicationGUI {
 
     public CupboardApplicationGUI() throws IOException, InterruptedException {
         frame = new JFrame();
-        GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        /*GraphicsEnvironment graphics = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsDevice device = graphics.getDefaultScreenDevice();
-        device.setFullScreenWindow(frame);
+        device.setFullScreenWindow(frame);*/
+        frame.setSize(700, 300);
         frame.setTitle("Personal digital Cupboard");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         table = createJTable();
